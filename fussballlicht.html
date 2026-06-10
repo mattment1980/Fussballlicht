@@ -309,6 +309,40 @@
 </div>
 
 <div class="section">
+  <div class="section-label">Reaktionstraining</div>
+  <div class="random-card">
+    <div class="combined-label">Zufälliges Licht leuchtet 2 Sek. auf — dann aus</div>
+
+    <div class="auto-row" style="margin-bottom:12px">
+      <span class="interval-label">Farbe</span>
+      <select id="react-color" style="padding:8px 10px;border-radius:8px;border:0.5px solid #3a3a3a;background:#111;color:#f0f0f0;font-size:13px;">
+        <option value="random">Zufällig</option>
+        <option value="ROT">Rot</option>
+        <option value="GRUEN">Grün</option>
+        <option value="BLAU">Blau</option>
+      </select>
+    </div>
+
+    <div class="auto-row" style="margin-bottom:12px">
+      <input class="interval-input" type="number" id="react-reps" value="20" min="1" max="99">
+      <span class="interval-label">Wiederholungen</span>
+    </div>
+
+    <div class="auto-row" style="margin-bottom:0">
+      <input class="interval-input" type="number" id="react-pause" value="1" min="1" max="10">
+      <span class="interval-label">Sekunden Pause zwischen Blitzen</span>
+    </div>
+
+    <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+      <button class="random-btn" id="btn-react-start" onclick="startReaction()" disabled>Start</button>
+      <button class="toggle-btn" id="btn-react-stop" onclick="stopReaction()" style="white-space:nowrap" disabled>Stop</button>
+    </div>
+
+    <div style="margin-top:12px;font-size:12px;color:#555;" id="react-status"></div>
+  </div>
+</div>
+
+<div class="section">
   <button class="off-all-btn" id="btn-off-all" onclick="sendBoth('AUS')" disabled>Alle aus</button>
 </div>
 
@@ -384,7 +418,7 @@ function onDisconnect(n) {
 
 function updateSharedButtons() {
   const anyConnected = chars[1] || chars[2];
-  ['both-rot','both-gruen','both-blau','both-aus','btn-random','btn-auto','btn-off-all'].forEach(id => {
+  ['both-rot','both-gruen','both-blau','both-aus','btn-random','btn-auto','btn-off-all','btn-react-start'].forEach(id => {
     document.getElementById(id).disabled = !anyConnected;
   });
 }
@@ -417,7 +451,52 @@ function randomOnce() {
   sendBoth(cmd);
 }
 
-function toggleAuto() {
+let reactionRunning = false;
+let reactionStop = false;
+
+async function startReaction() {
+  if (reactionRunning) return;
+  const totalReps = Math.max(1, parseInt(document.getElementById('react-reps').value) || 20);
+  const pauseSecs = Math.max(1, parseInt(document.getElementById('react-pause').value) || 1);
+  const colorSel  = document.getElementById('react-color').value;
+
+  reactionRunning = true;
+  reactionStop    = false;
+  document.getElementById('btn-react-start').disabled = true;
+  document.getElementById('btn-react-stop').disabled  = false;
+  document.getElementById('btn-react-stop').classList.add('running');
+
+  for (let i = 0; i < totalReps; i++) {
+    if (reactionStop) break;
+
+    const connectedDevices = [1, 2].filter(n => chars[n]);
+    if (connectedDevices.length === 0) break;
+    const n   = connectedDevices[Math.floor(Math.random() * connectedDevices.length)];
+    const cmd = colorSel === 'random' ? COLORS[Math.floor(Math.random() * COLORS.length)] : colorSel;
+
+    document.getElementById('react-status').textContent = `Runde ${i + 1} / ${totalReps} — Licht ${n} → ${cmd}`;
+    await send(n, cmd);
+    await sleep(2000);
+    if (reactionStop) { await send(n, 'AUS'); break; }
+    await send(n, 'AUS');
+    if (i < totalReps - 1) await sleep(pauseSecs * 1000);
+  }
+
+  reactionRunning = false;
+  document.getElementById('btn-react-start').disabled = false;
+  document.getElementById('btn-react-stop').disabled  = true;
+  document.getElementById('btn-react-stop').classList.remove('running');
+  document.getElementById('react-status').textContent = reactionStop ? 'Gestoppt.' : 'Fertig!';
+}
+
+function stopReaction() {
+  reactionStop = true;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
   const btn = document.getElementById('btn-auto');
   if (autoTimer) {
     clearInterval(autoTimer);
