@@ -341,7 +341,7 @@ async function connectDevice(n) {
   try {
     log(`Suche Licht ${n}...`);
     const device = await navigator.bluetooth.requestDevice({
-      filters: [{ name: `FussballLicht_${n}` }],
+      acceptAllDevices: true,
       optionalServices: [SERVICE_UUID]
     });
     device.addEventListener('gattserverdisconnected', () => onDisconnect(n));
