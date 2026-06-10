@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FussballLicht Steuerung</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0d0d0d;
+    color: #f0f0f0;
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .section {
+    margin-bottom: 32px;
+  }
+
+  .device-card {
+    background: #1a1a1a;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .device-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .device-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #333;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .status-dot.connected { background: #3a9e5f; }
+  .status-dot.active { background: #f0f0f0; box-shadow: 0 0 6px rgba(240,240,240,0.5); }
+
+  .connect-btn {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 0.5px solid #3a3a3a;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .connect-btn:hover { border-color: #666; color: #ccc; }
+  .connect-btn.connected { border-color: #3a9e5f; color: #3a9e5f; }
+  .connect-btn.connected:hover { background: rgba(58,158,95,0.1); }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .color-btn {
+    padding: 10px 0;
+    border-radius: 8px;
+    border: 0.5px solid transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .color-btn:active { transform: scale(0.96); }
+  .color-btn:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
+
+  .btn-rot   { background: #c0392b; color: #fff; border-color: #e74c3c; }
+  .btn-gruen { background: #27ae60; color: #fff; border-color: #2ecc71; }
+  .btn-blau  { background: #2980b9; color: #fff; border-color: #3498db; }
+  .btn-aus   { background: #1a1a1a; color: #666; border-color: #333; }
+
+  .btn-rot:hover:not(:disabled)   { background: #e74c3c; }
+  .btn-gruen:hover:not(:disabled) { background: #2ecc71; }
+  .btn-blau:hover:not(:disabled)  { background: #3498db; }
+  .btn-aus:hover:not(:disabled)   { background: #222; color: #999; border-color: #444; }
+
+  .combined-card {
+    background: #1a1a1a;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .combined-label {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 12px;
+  }
+
+  .random-card {
+    background: #1a1a1a;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .random-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .random-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: 0.5px solid #3a3a3a;
+    background: #222;
+    color: #ccc;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .random-btn:hover:not(:disabled) { background: #2a2a2a; border-color: #555; color: #fff; }
+  .random-btn:active:not(:disabled) { transform: scale(0.98); }
+  .random-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .auto-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .interval-input {
+    width: 64px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 0.5px solid #3a3a3a;
+    background: #111;
+    color: #f0f0f0;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .interval-label {
+    font-size: 13px;
+    color: #666;
+    flex: 1;
+  }
+
+  .toggle-btn {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 0.5px solid #3a3a3a;
+    background: transparent;
+    color: #888;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .toggle-btn.running { border-color: #e67e22; color: #e67e22; }
+  .toggle-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .off-all-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: 0.5px solid #3a3a3a;
+    background: #111;
+    color: #888;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .off-all-btn:hover:not(:disabled) { background: #1a1a1a; border-color: #555; color: #ccc; }
+  .off-all-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .log {
+    margin-top: 24px;
+    font-size: 11px;
+    color: #444;
+    line-height: 1.8;
+    font-family: monospace;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+  .log span { display: block; }
+  .log .ok  { color: #3a9e5f; }
+  .log .err { color: #c0392b; }
+  .log .info { color: #555; }
+</style>
+</head>
+<body>
+
+<h1>FussballLicht</h1>
+<p class="subtitle">BLE Trainingssteuerung</p>
+
+<div class="section">
+  <div class="section-label">Einzelsteuerung</div>
+
+  <div class="device-card" id="card-1">
+    <div class="device-header">
+      <div class="device-name">
+        <span class="status-dot" id="dot-1"></span>
+        Licht 1
+      </div>
+      <button class="connect-btn" id="btn-connect-1" onclick="connectDevice(1)">Verbinden</button>
+    </div>
+    <div class="color-grid">
+      <button class="color-btn btn-rot"   onclick="send(1,'ROT')"   disabled id="c1-rot">Rot</button>
+      <button class="color-btn btn-gruen" onclick="send(1,'GRUEN')" disabled id="c1-gruen">Grün</button>
+      <button class="color-btn btn-blau"  onclick="send(1,'BLAU')"  disabled id="c1-blau">Blau</button>
+      <button class="color-btn btn-aus"   onclick="send(1,'AUS')"   disabled id="c1-aus">Aus</button>
+    </div>
+  </div>
+
+  <div class="device-card" id="card-2">
+    <div class="device-header">
+      <div class="device-name">
+        <span class="status-dot" id="dot-2"></span>
+        Licht 2
+      </div>
+      <button class="connect-btn" id="btn-connect-2" onclick="connectDevice(2)">Verbinden</button>
+    </div>
+    <div class="color-grid">
+      <button class="color-btn btn-rot"   onclick="send(2,'ROT')"   disabled id="c2-rot">Rot</button>
+      <button class="color-btn btn-gruen" onclick="send(2,'GRUEN')" disabled id="c2-gruen">Grün</button>
+      <button class="color-btn btn-blau"  onclick="send(2,'BLAU')"  disabled id="c2-blau">Blau</button>
+      <button class="color-btn btn-aus"   onclick="send(2,'AUS')"   disabled id="c2-aus">Aus</button>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Beide gleichzeitig</div>
+  <div class="combined-card">
+    <div class="combined-label">Sendet an alle verbundenen Lichter</div>
+    <div class="color-grid">
+      <button class="color-btn btn-rot"   onclick="sendBoth('ROT')"   disabled id="both-rot">Rot</button>
+      <button class="color-btn btn-gruen" onclick="sendBoth('GRUEN')" disabled id="both-gruen">Grün</button>
+      <button class="color-btn btn-blau"  onclick="sendBoth('BLAU')"  disabled id="both-blau">Blau</button>
+      <button class="color-btn btn-aus"   onclick="sendBoth('AUS')"   disabled id="both-aus">Aus</button>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Zufallsmodus</div>
+  <div class="random-card">
+    <div class="random-row">
+      <button class="random-btn" id="btn-random" onclick="randomOnce()" disabled>Einmal zufällig</button>
+    </div>
+    <div class="auto-row">
+      <input class="interval-input" type="number" id="interval-val" value="3" min="1" max="60">
+      <span class="interval-label">Sekunden — automatisch wechseln</span>
+      <button class="toggle-btn" id="btn-auto" onclick="toggleAuto()" disabled>Start</button>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <button class="off-all-btn" id="btn-off-all" onclick="sendBoth('AUS')" disabled>Alle aus</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<script>
+const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CHAR_UUID    = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+const COLORS = ['ROT', 'GRUEN', 'BLAU'];
+
+const devices = { 1: null, 2: null };
+const chars   = { 1: null, 2: null };
+let autoTimer = null;
+
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const line = document.createElement('span');
+  line.className = type;
+  line.textContent = '› ' + msg;
+  el.appendChild(line);
+  while (el.children.length > 6) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function connectDevice(n) {
+  if (!navigator.bluetooth) {
+    log('Web Bluetooth nicht unterstützt. Chrome nötig.', 'err');
+    return;
+  }
+  try {
+    log(`Suche Licht ${n}...`);
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: `FussballLicht_${n}` }],
+      optionalServices: [SERVICE_UUID]
+    });
+    device.addEventListener('gattserverdisconnected', () => onDisconnect(n));
+    const server  = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    const char    = await service.getCharacteristic(CHAR_UUID);
+    devices[n] = device;
+    chars[n]   = char;
+    onConnect(n);
+    log(`Licht ${n} verbunden`, 'ok');
+  } catch(e) {
+    log(`Licht ${n}: ${e.message}`, 'err');
+  }
+}
+
+function onConnect(n) {
+  document.getElementById(`dot-${n}`).classList.add('connected');
+  const btn = document.getElementById(`btn-connect-${n}`);
+  btn.textContent = 'Verbunden';
+  btn.classList.add('connected');
+  ['rot','gruen','blau','aus'].forEach(c => {
+    document.getElementById(`c${n}-${c}`).disabled = false;
+  });
+  updateSharedButtons();
+}
+
+function onDisconnect(n) {
+  devices[n] = null;
+  chars[n]   = null;
+  document.getElementById(`dot-${n}`).classList.remove('connected','active');
+  const btn = document.getElementById(`btn-connect-${n}`);
+  btn.textContent = 'Verbinden';
+  btn.classList.remove('connected');
+  ['rot','gruen','blau','aus'].forEach(c => {
+    document.getElementById(`c${n}-${c}`).disabled = true;
+  });
+  log(`Licht ${n} getrennt`, 'err');
+  updateSharedButtons();
+}
+
+function updateSharedButtons() {
+  const anyConnected = chars[1] || chars[2];
+  ['both-rot','both-gruen','both-blau','both-aus','btn-random','btn-auto','btn-off-all'].forEach(id => {
+    document.getElementById(id).disabled = !anyConnected;
+  });
+}
+
+async function send(n, cmd) {
+  if (!chars[n]) return;
+  try {
+    const encoded = new TextEncoder().encode(cmd);
+    await chars[n].writeValue(encoded);
+    flashDot(n);
+    log(`Licht ${n} → ${cmd}`, 'ok');
+  } catch(e) {
+    log(`Sendefehler Licht ${n}: ${e.message}`, 'err');
+  }
+}
+
+function sendBoth(cmd) {
+  if (chars[1]) send(1, cmd);
+  if (chars[2]) send(2, cmd);
+}
+
+function flashDot(n) {
+  const dot = document.getElementById(`dot-${n}`);
+  dot.classList.add('active');
+  setTimeout(() => dot.classList.remove('active'), 300);
+}
+
+function randomOnce() {
+  const cmd = COLORS[Math.floor(Math.random() * COLORS.length)];
+  sendBoth(cmd);
+}
+
+function toggleAuto() {
+  const btn = document.getElementById('btn-auto');
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    btn.textContent = 'Start';
+    btn.classList.remove('running');
+    log('Auto-Modus gestoppt');
+  } else {
+    const secs = Math.max(1, parseInt(document.getElementById('interval-val').value) || 3);
+    randomOnce();
+    autoTimer = setInterval(randomOnce, secs * 1000);
+    btn.textContent = 'Stop';
+    btn.classList.add('running');
+    log(`Auto-Modus: alle ${secs}s`);
+  }
+}
+</script>
+</body>
+</html>
