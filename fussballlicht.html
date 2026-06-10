@@ -497,6 +497,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function toggleAuto() {
   const btn = document.getElementById('btn-auto');
   if (autoTimer) {
     clearInterval(autoTimer);
